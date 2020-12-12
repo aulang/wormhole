@@ -1,0 +1,11 @@
+[server]
+key = "Aulang"
+port = 8888
+min_proxy_port = 1025
+max_proxy_port = 65535
+
+[client]
+key = "Aulang"
+server_addr = "127.0.0.1:8080"
+local_addrs = [ "127.0.0.1:8888:18888" ]
+max_tunnel = 2

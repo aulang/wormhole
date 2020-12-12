@@ -1,74 +1,91 @@
 //! # 配置模块
 
 pub mod client;
+pub mod net_addr;
 pub mod server;
 
-/// 网络地址
-/// addr：IPv4地址
-/// port：端口号
-/// proxy_port：代理端口
-#[derive(Debug)]
-pub struct NetAddr {
-    pub addr: String,    // IPv4地址
-    pub port: u32,       // 端口号
-    pub proxy_port: u32, // 代理端口
+use serde_derive::Deserialize;
+use std::fs::File;
+use std::io::Read;
+use toml::value::Array;
+
+#[derive(Debug, Deserialize)]
+struct Server {
+    key: String,
+    port: u32,
+    min_proxy_port: u32,
+    max_proxy_port: u32,
 }
 
-impl NetAddr {
-    pub fn new(addr: String, port: u32, proxy_port: u32) -> NetAddr {
-        NetAddr {
-            addr,
-            port,
-            proxy_port,
+#[derive(Debug, Deserialize)]
+struct Client {
+    key: String,
+    server_addr: String,
+    local_addrs: Array,
+    max_tunnel: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Config {
+    server: Server,
+    client: Client,
+}
+
+pub fn read_config(file_path: &str) -> Result<Config, String> {
+    let mut file = match File::open(file_path) {
+        Ok(f) => f,
+        Err(e) => return Err(format!("打开配置文件失败：{}", e)),
+    };
+
+    let mut file_content = String::new();
+
+    match file.read_to_string(&mut file_content) {
+        Ok(s) => s,
+        Err(e) => return Err(format!("读取配置文件失败：{}", e)),
+    };
+
+    let config = match toml::from_str::<Config>(&file_content) {
+        Ok(c) => c,
+        Err(e) => return Err(format!("解析配置文件失败：{}", e)),
+    };
+
+    Ok(config)
+}
+
+pub fn read_client_config(file_path: &str) -> Result<client::Client, String> {
+    let client = read_config(file_path)?.client;
+
+    let server_addr = net_addr::NetAddr::parse(&client.server_addr)?;
+
+    let mut local_addrs: Vec<net_addr::NetAddr> = Vec::new();
+
+    for local_addr in client.local_addrs.iter() {
+        if let Some(s) = local_addr.as_str() {
+            match net_addr::NetAddr::parse(s) {
+                Ok(n) => local_addrs.push(n),
+                Err(e) => eprintln!("地址格式错误{}！", e),
+            };
         }
     }
 
-    pub fn parse(address: &str) -> Result<NetAddr, &str> {
-        let strs: Vec<&str> = address.split(":").collect();
-
-        if strs.len() < 2 {
-            return Err("地址格式不对！");
-        }
-
-        let addr = String::from(strs[0]);
-
-        let mut port = 0;
-
-        let s1 = String::from(strs[1]);
-        let p1 = s1.parse::<u32>();
-        if let Ok(i) = p1 {
-            port = i;
-        } else {
-            return Err("端口格式不对！");
-        }
-
-        let mut proxy_port = 0;
-
-        if let Some(s2) = strs.get(2) {
-            let p2 = s2.parse::<u32>();
-            if let Ok(i) = p2 {
-                proxy_port = i;
-            } else {
-                return Err("端口格式不对！");
-            }
-        }
-
-        return Ok(NetAddr::new(addr, port, proxy_port));
+    if local_addrs.is_empty() {
+        return Err(format!("地址格式错误：{:?}！", client.local_addrs));
     }
 
-    pub fn parse_array(addresses: &String) -> Vec<NetAddr> {
-        let mut addrs: Vec<NetAddr> = Vec::new();
+    Ok(client::Client::new(
+        client.key,
+        server_addr,
+        local_addrs,
+        client.max_tunnel,
+    ))
+}
 
-        let addresses: Vec<&str> = addresses.split(",").collect();
-
-        for address in addresses.iter() {
-            if let Ok(addr) = NetAddr::parse(address) {
-                addrs.push(addr)
-            } else {
-                println!("地址格式不对：{}", address);
-            }
-        }
-
-        return addrs;
-    }
+pub fn read_server_config(file_path: &str) -> Result<server::Server, String> {
+    let server = read_config(file_path)?.server;
+    Ok(server::Server::new_full(
+        server.key,
+        server.port,
+        server.min_proxy_port,
+        server.max_proxy_port,
+    ))
 }

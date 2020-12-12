@@ -1,6 +1,6 @@
 //! # 客户端配置
 
-use super::NetAddr;
+use super::net_addr::NetAddr;
 
 #[derive(Debug)]
 pub struct Client {
@@ -41,11 +41,11 @@ impl Client {
         self.max_tunnel
     }
 
-    pub fn parse_args(args: &[String]) -> Result<Client, &str> {
+    pub fn parse_args(args: &[String]) -> Result<Client, String> {
         let len = args.len();
 
         if len < 2 {
-            return Err("参数缺失！");
+            return Err(format!("参数缺失：{:?}！", args));
         }
 
         let key: String = args[0].clone();
@@ -53,8 +53,9 @@ impl Client {
         let server_addr: NetAddr = NetAddr::parse(&args[1])?;
 
         let local_addrs: Vec<NetAddr> = NetAddr::parse_array(&args[2]);
+        
         if local_addrs.is_empty() {
-            return Err("地址格式错误！");
+            return Err(format!("地址格式错误：{}！", args[2]));
         }
 
         let mut max_tunnel = 1;
@@ -63,7 +64,7 @@ impl Client {
             if let Ok(i) = arg.parse::<u32>() {
                 max_tunnel = i;
             } else {
-                println!("通道数格式不对：{}", arg);
+                eprintln!("通道数格式不对：{}", arg);
             }
         }
 
