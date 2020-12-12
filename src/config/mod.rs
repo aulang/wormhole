@@ -22,4 +22,53 @@ impl NetAddr {
             proxy_port,
         }
     }
+
+    pub fn parse(address: &str) -> Result<NetAddr, &str> {
+        let strs: Vec<&str> = address.split(":").collect();
+
+        if strs.len() < 2 {
+            return Err("地址格式不对！");
+        }
+
+        let addr = String::from(strs[0]);
+
+        let mut port = 0;
+
+        let s1 = String::from(strs[1]);
+        let p1 = s1.parse::<u32>();
+        if let Ok(i) = p1 {
+            port = i;
+        } else {
+            return Err("端口格式不对！");
+        }
+
+        let mut proxy_port = 0;
+
+        if let Some(s2) = strs.get(2) {
+            let p2 = s2.parse::<u32>();
+            if let Ok(i) = p2 {
+                proxy_port = i;
+            } else {
+                return Err("端口格式不对！");
+            }
+        }
+
+        return Ok(NetAddr::new(addr, port, proxy_port));
+    }
+
+    pub fn parse_array(addresses: &String) -> Vec<NetAddr> {
+        let mut addrs: Vec<NetAddr> = Vec::new();
+
+        let addresses: Vec<&str> = addresses.split(",").collect();
+
+        for address in addresses.iter() {
+            if let Ok(addr) = NetAddr::parse(address) {
+                addrs.push(addr)
+            } else {
+                println!("地址格式不对：{}", address);
+            }
+        }
+
+        return addrs;
+    }
 }

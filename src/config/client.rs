@@ -41,25 +41,31 @@ impl Client {
         self.max_tunnel
     }
 
-    pub fn parse_args(args: &Vec<String>) -> Result<Client, &str> {
+    pub fn parse_args(args: &[String]) -> Result<Client, &str> {
         let len = args.len();
 
-        if len < 3 {
+        if len < 2 {
             return Err("参数缺失！");
         }
 
-        for arg in args.iter() {
-            println!("参数：{}", arg);
+        let key: String = args[0].clone();
+
+        let server_addr: NetAddr = NetAddr::parse(&args[1])?;
+
+        let local_addrs: Vec<NetAddr> = NetAddr::parse_array(&args[2]);
+        if local_addrs.is_empty() {
+            return Err("地址格式错误！");
         }
 
-        if let Some(x) = args.get(0) {
-            println!("参数：{}", x);
-        }
+        let mut max_tunnel = 1;
 
-        let key: String = String::from("");
-        let server_addr: NetAddr = NetAddr::new(String::from(""), 0, 0);
-        let local_addrs: Vec<NetAddr> = vec![];
-        let max_tunnel: u32 = 2;
+        if let Some(arg) = args.get(3) {
+            if let Ok(i) = arg.parse::<u32>() {
+                max_tunnel = i;
+            } else {
+                println!("通道数格式不对：{}", arg);
+            }
+        }
 
         Ok(Client {
             key,
