@@ -1,3 +1,5 @@
+//! # 服务端端配置
+
 #[derive(Debug)]
 pub struct Server {
     key: String,         // 连接密钥

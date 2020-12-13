@@ -48,7 +48,7 @@ impl NetAddr {
             }
         }
 
-        return Ok(NetAddr::new(addr, port, proxy_port));
+        Ok(NetAddr::new(addr, port, proxy_port))
     }
 
     pub fn parse_array(addresses: &String) -> Vec<NetAddr> {
