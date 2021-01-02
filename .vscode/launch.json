@@ -5,13 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug",
+            "name": "Server",
             "type": "gdb",
             "request": "launch",
             "preLaunchTask": "Build",
             "cwd": "${workspaceFolder}",
-            "target": "${workspaceFolder}/target/debug/wormhole",
-            "arguments": "-client Aulang88 127.0.0.1:8888 127.0.0.1:8080:6060"
+            "target": "${workspaceFolder}/target/debug/server",
+            "arguments": "-k Aulang88 -p 8888"
+        },
+        {
+            "name": "Client",
+            "type": "gdb",
+            "request": "launch",
+            "preLaunchTask": "Build",
+            "cwd": "${workspaceFolder}",
+            "target": "${workspaceFolder}/target/debug/client",
+            "arguments": "-k Aulang88 -s 127.0.0.1:8888 -p 127.0.0.1:8080:6060 127.0.0.1:8081:6061"
         }
     ]
 }

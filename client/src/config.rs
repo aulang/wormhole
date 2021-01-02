@@ -1,6 +1,4 @@
-//! # 客户端配置
-
-use super::net_addr::NetAddr;
+use core::net_addr::NetAddr;
 
 #[derive(Debug)]
 pub struct Client {
@@ -53,7 +51,6 @@ impl Client {
         let server_addr: NetAddr = NetAddr::parse(&args[1])?;
 
         let local_addrs: Vec<NetAddr> = NetAddr::parse_array(&args[2]);
-        
         if local_addrs.is_empty() {
             return Err(format!("地址格式错误：{}！", args[2]));
         }
@@ -74,5 +71,31 @@ impl Client {
             local_addrs,
             max_tunnel,
         })
+    }
+
+    pub fn read_config(file_path: &str) -> Client {
+        let client = match core::config::read_client_config(file_path) {
+            Ok(o) => o,
+            Err(e) => panic!(e),
+        };
+
+        let server_addr = match NetAddr::parse(&client.server_addr) {
+            Ok(o) => o,
+            Err(e) => panic!(e),
+        };
+
+        let mut local_addrs: Vec<NetAddr> = Vec::new();
+        for local_addr in client.local_addrs.iter() {
+            match NetAddr::parse(local_addr) {
+                Ok(n) => local_addrs.push(n),
+                Err(e) => eprintln!("地址格式错误{}！", e),
+            };
+        }
+
+        if local_addrs.is_empty() {
+            panic!(format!("地址格式错误：{:?}！", client.local_addrs));
+        }
+
+        Client::new(client.key, server_addr, local_addrs, client.max_tunnel)
     }
 }

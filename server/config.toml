@@ -1,0 +1,4 @@
+key = "Aulang"
+port = 8888
+min_proxy_port = 1025
+max_proxy_port = 65535
